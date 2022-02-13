@@ -59,6 +59,34 @@ impl Expression for BinOp {
     }
 }
 
+struct TriOp {
+    condition: Box<dyn Expression>,
+    on_true: Box<dyn Expression>,
+    on_false: Box<dyn Expression>,
+}
+
+impl Expression for TriOp {
+    fn compute(&self) -> isize {
+        if self.condition.compute() != 0 { self.on_true.compute() } else { self.on_false.compute() }
+    }
+    fn pretty_print(&self) -> String {
+        String::new()
+        + "("
+        + self.condition.pretty_print().as_str()
+        + "?"
+        + self.on_true.pretty_print().as_str()
+        + ":"
+        + self.on_false.pretty_print().as_str()
+        + ")"
+    }
+    fn save(&self) -> String {
+        String::new() + "TOp "
+        + self.condition.save().as_str()
+        + self.on_true.save().as_str()
+        + self.on_false.save().as_str()        
+    }
+}
+
 fn load_from_terms<'a, T>(terms: &mut T) -> Box<dyn Expression>
     where T: Iterator<Item=&'a str>
 {
@@ -72,7 +100,13 @@ fn load_from_terms<'a, T>(terms: &mut T) -> Box<dyn Expression>
             let lhs = load_from_terms(terms);
             let rhs = load_from_terms(terms);
             Box::new(BinOp{operator: operator, lhs: lhs, rhs: rhs})
-        }
+        },
+        Some("TOp") => {
+            let condition = load_from_terms(terms);
+            let on_true = load_from_terms(terms);
+            let on_false = load_from_terms(terms);
+            Box::new(TriOp{condition: condition, on_true: on_true, on_false: on_false})
+        },
         _ => panic!(),
     }
 }
@@ -89,7 +123,7 @@ fn main() {
     println!("{}", e.pretty_print());
     println!("{}", e.save());
 
-    let e2 = load("BOp * BOp + C 2 C 2 C 3");
+    let e2 = load("TOp BOp * BOp + C 2 C 2 C 3 C 1 C 2");
     println!("{}", e2.compute());
     println!("{}", e2.pretty_print());
 }
